@@ -7,7 +7,8 @@ services:
       MYSQL_PASSWORD: local_users_password
       MYSQL_ROOT_PASSWORD: local_root_password
     ports:
-      - "3306:3306"
+      # Puerto del host configurable (MYSQL_HOST_PORT en .env) por si ya hay un MySQL local en 3306
+      - "${MYSQL_HOST_PORT:-3306}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
