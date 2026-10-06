@@ -1,6 +1,7 @@
 package com.jcaa.usersmanagement.infrastructure.config;
 
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConfig;
+import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.PostgreSqlDatabaseConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import javax.sql.DataSource;
@@ -19,8 +20,11 @@ public class DataSourceSpringConfig {
   private static final String PROP_DB_USERNAME = "${db.username}";
   private static final String PROP_DB_PASSWORD = "${db.password}";
   private static final String PROP_DB_SSL_MODE = "${db.ssl-mode}";
+  private static final String PROP_DB_ENGINE   = "${db.engine:mysql}";
 
-  private static final String LOG_DATASOURCE_INIT = "[DataSourceSpringConfig] DataSource inicializado. host={} port={}";
+  private static final String ENGINE_POSTGRESQL = "postgresql";
+
+  private static final String LOG_DATASOURCE_INIT = "[DataSourceSpringConfig] DataSource inicializado. engine={} host={} port={}";
 
   @Value(PROP_DB_HOST)
   private String dbHost;
@@ -40,21 +44,30 @@ public class DataSourceSpringConfig {
   @Value(PROP_DB_SSL_MODE)
   private String dbSslMode;
 
+  @Value(PROP_DB_ENGINE)
+  private String dbEngine;
+
   @Bean
   public DataSource dataSource() {
-    final DatabaseConfig config =
-        new DatabaseConfig(dbHost, dbPort, dbName, dbUsername, dbPassword, dbSslMode);
-
     final HikariConfig hikariConfig = new HikariConfig();
-    hikariConfig.setJdbcUrl(config.buildJdbcUrl());
-    hikariConfig.setUsername(config.username());
-    hikariConfig.setPassword(config.password());
+    hikariConfig.setJdbcUrl(buildJdbcUrl());
+    hikariConfig.setUsername(dbUsername);
+    hikariConfig.setPassword(dbPassword);
     hikariConfig.setMaximumPoolSize(10);
     hikariConfig.setMinimumIdle(2);
     hikariConfig.setConnectionTimeout(30_000);
 
-    log.info(LOG_DATASOURCE_INIT, dbHost, dbPort);
+    log.info(LOG_DATASOURCE_INIT, dbEngine, dbHost, dbPort);
     return new HikariDataSource(hikariConfig);
+  }
+
+  private String buildJdbcUrl() {
+    if (ENGINE_POSTGRESQL.equalsIgnoreCase(dbEngine)) {
+      return new PostgreSqlDatabaseConfig(dbHost, dbPort, dbName, dbUsername, dbPassword, dbSslMode)
+          .buildJdbcUrl();
+    }
+    return new DatabaseConfig(dbHost, dbPort, dbName, dbUsername, dbPassword, dbSslMode)
+        .buildJdbcUrl();
   }
 }
 
